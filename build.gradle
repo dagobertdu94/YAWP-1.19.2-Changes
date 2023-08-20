@@ -40,6 +40,7 @@ dependencies {
 	// modImplementation "curse.maven:forgeconfigapiport-547434:3671141"
 	// 1.19.2
 	modImplementation "curse.maven:forgeconfigapiport-547434:4143545"
+	modImplementation "net.luckperms:api:5.4"
 
 
 	// Uncomment the following line to enable the deprecated Fabric API modules. 
