@@ -33,7 +33,7 @@ final class LuckPermsReflector {
 	}
 	
 	public static final boolean isLuckPermsAccessible() {
-		return (isLuckPermsLoaded() && getLuckPermsClass().isPresent());
+		return (CommandPermissionConfig.USE_LUCKPERMS.get() == true && isLuckPermsLoaded() && getLuckPermsClass().isPresent());
 	}
 	
 	public static final boolean hasPermission(PlayerEntity p, String perm) {
