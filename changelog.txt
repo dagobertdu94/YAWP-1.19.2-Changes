@@ -1,3 +1,19 @@
+# [0.0.2.9-beta3 (dagobertdu94's Changes)] - 2023-08-20
+## Added
+* LuckPerms integration
+* Permission checks for various commands that allow creating, modifying or deleting regions
+* Ability to bypass the flag check if player has the required permission
+* Config option for using LuckPerms if present (otherwise falls back to Vanilla permission system)
+* Config option for allowing bypassing the flag check if required permissions are present
+## Changed
+* YAWP is now able to load and run in singleplayer worlds but they need to be opened as LAN game
+* Region owners can add and remove other players as Region members
+* Region owners can't add other players as Region owners anymore (so they can't remove other owners anymore)
+* Region owners can change the flags of their region
+* Only players with required permission can add and remove child regions to/from other regions
+## Fixed
+* Players without the required permissions were able to run any command and for example modify any region or dimension they wanted
+
 # [0.0.2.9-beta3] - 2023-08-12
 ## Fixed
 * [Forge] Fix place-blocks and no-walker-freeze flags not working together properly
