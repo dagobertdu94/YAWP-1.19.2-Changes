@@ -11,6 +11,7 @@ import de.z0rdak.yawp.commands.arguments.flag.RegionFlagArgumentType;
 import de.z0rdak.yawp.commands.arguments.region.AddRegionChildArgumentType;
 import de.z0rdak.yawp.commands.arguments.region.RegionArgumentType;
 import de.z0rdak.yawp.commands.arguments.region.RemoveRegionChildArgumentType;
+import de.z0rdak.yawp.config.server.CommandPermissionConfig;
 import de.z0rdak.yawp.config.server.RegionConfig;
 import de.z0rdak.yawp.core.affiliation.AffiliationType;
 import de.z0rdak.yawp.core.area.AreaType;
@@ -43,7 +44,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -85,15 +85,15 @@ public class RegionCommands {
                                         .executes(ctx -> promptRegionSpatialProperties(ctx.getSource(), getRegionArgument(ctx))))
                                 .then(literal(STATE)
                                         .executes(ctx -> promptRegionState(ctx.getSource(), getRegionArgument(ctx)))
-                                        .then(literal(ALERT)
+                                        .then(literal(ALERT).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.manage"))
                                                 .executes(ctx -> setAlertState(ctx, getRegionArgument(ctx)))
                                                 .then(CommandManager.argument(ALERT.toString(), BoolArgumentType.bool())
                                                         .executes(ctx -> setAlertState(ctx, getRegionArgument(ctx), getAlertArgument(ctx)))))
-                                        .then(literal(ENABLE)
+                                        .then(literal(ENABLE).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.manage"))
                                                 .executes(ctx -> setEnableState(ctx, getRegionArgument(ctx)))
                                                 .then(CommandManager.argument(ENABLE.toString(), BoolArgumentType.bool())
                                                         .executes(ctx -> setEnableState(ctx, getRegionArgument(ctx), getEnableArgument(ctx)))))
-                                        .then(literal(PRIORITY)
+                                        .then(literal(PRIORITY).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.manage"))
                                                 .then(CommandManager.argument(PRIORITY.toString(), IntegerArgumentType.integer())
                                                         .executes(ctx -> setPriority(ctx, getRegionArgument(ctx), getPriorityArgument(ctx))))
                                                 .then(literal(INC)
@@ -134,7 +134,7 @@ public class RegionCommands {
                                                 .then(CommandManager.argument(PAGE.toString(), IntegerArgumentType.integer(0))
                                                         .executes(ctx -> promptRegionChildren(ctx.getSource(), getRegionArgument(ctx), getPageNoArgument(ctx))))
                                         ))
-                                .then(literal(AREA)
+                                .then(literal(AREA).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.manage"))
                                         .then(CommandManager.literal(AreaType.CUBOID.areaType)
                                                 .then(CommandManager.argument("pos1", BlockPosArgumentType.blockPos())
                                                         .then(CommandManager.argument("pos2", BlockPosArgumentType.blockPos())
@@ -158,15 +158,19 @@ public class RegionCommands {
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.PLAYER.toString(), EntityArgumentType.player())
                                                                 .executes(ctx -> addPlayer(ctx, getPlayerArgument(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx)))))
+                                                
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.PLAYER.toString(), EntityArgumentType.player())
                                                                 .executes(ctx -> addPlayer(ctx, getPlayerArgument(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx))))))
+                                        
+                                        
                                         .then(literal(CommandConstants.TEAM)
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.TEAM.toString(), TeamArgumentType.team())
                                                                 .executes(ctx -> addTeam(ctx, getTeamArgumentType(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx)))))
+                                                
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.TEAM.toString(), TeamArgumentType.team())
@@ -185,15 +189,19 @@ public class RegionCommands {
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.PLAYER.toString(), EntityArgumentType.player())
                                                                 .executes(ctx -> removePlayer(ctx, getPlayerArgument(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx)))))
+                                                
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.PLAYER.toString(), EntityArgumentType.player())
                                                                 .executes(ctx -> removePlayer(ctx, getPlayerArgument(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx))))))
+                                        
+                                        
                                         .then(literal(CommandConstants.TEAM)
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.TEAM.toString(), TeamArgumentType.team())
                                                                 .executes(ctx -> removeTeam(ctx, getTeamArgumentType(ctx), getRegionArgument(ctx), getAffiliationArgument(ctx)))))
+                                                
                                                 .then(CommandManager.argument(CommandConstants.AFFILIATION.toString(), StringArgumentType.word())
                                                         .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
                                                         .then(CommandManager.argument(CommandConstants.TEAM.toString(), TeamArgumentType.team())
@@ -287,6 +295,10 @@ public class RegionCommands {
         MutableText undoLink = buildRegionActionUndoLink(src.getInput(), REMOVE, ADD);
         switch (affiliation) {
             case "member":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage")
+            			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+            		return 1;
+            	
                 if (region.hasMember(team.getName())) {
                     region.removeMember(team);
                     RegionDataManager.save();
@@ -295,6 +307,10 @@ public class RegionCommands {
                 }
                 break;
             case "owner":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+            		return 1;
+            	
+            	
                 if (region.hasOwner(team.getName())) {
                     region.removeOwner(team);
                     RegionDataManager.save();
@@ -312,6 +328,10 @@ public class RegionCommands {
         MutableText undoLink = buildRegionActionUndoLink(src.getInput(), ADD, REMOVE);
         switch (affiliation) {
             case "member":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage")
+            			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+            		return 1;
+            	
                 if (!region.hasMember(team.getName())) {
                     region.addMember(team);
                     RegionDataManager.save();
@@ -320,6 +340,9 @@ public class RegionCommands {
                 }
                 break;
             case "owner":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+            		return 1;
+            	
                 if (!region.hasOwner(team.getName())) {
                     region.addOwner(team);
                     RegionDataManager.save();
@@ -338,10 +361,14 @@ public class RegionCommands {
         return 1;
     }
 
-    private static int removePlayer(CommandContext<ServerCommandSource> src, ServerPlayerEntity player, IMarkableRegion region, String affiliation) {
+    private static int removePlayer(CommandContext<ServerCommandSource> src, PlayerEntity player, IMarkableRegion region, String affiliation) {
         MutableText undoLink = buildRegionActionUndoLink(src.getInput(), REMOVE, ADD);
         switch (affiliation) {
             case "member":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage")
+            			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+            		return 1;
+            	
                 if (region.hasMember(player.getUuid())) {
                     region.removeMember(player);
                     RegionDataManager.save();
@@ -350,6 +377,9 @@ public class RegionCommands {
                 }
                 break;
             case "owner":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+            		return 1;
+            	
                 if (region.hasOwner(player.getUuid())) {
                     region.removeOwner(player);
                     RegionDataManager.save();
@@ -363,10 +393,14 @@ public class RegionCommands {
         return 0;
     }
 
-    private static int addPlayer(CommandContext<ServerCommandSource> src, ServerPlayerEntity player, IMarkableRegion region, String affiliation) {
+    private static int addPlayer(CommandContext<ServerCommandSource> src, PlayerEntity player, IMarkableRegion region, String affiliation) {
         MutableText undoLink = buildRegionActionUndoLink(src.getInput(), ADD, REMOVE);
         switch (affiliation) {
             case "member":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage")
+            			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+            		return 1;
+            	
                 if (!region.hasMember(player.getUuid())) {
                     region.addMember(player);
                     RegionDataManager.save();
@@ -375,6 +409,9 @@ public class RegionCommands {
                 }
                 break;
             case "owner":
+            	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+            		return 1;
+            	
                 if (!region.hasOwner(player.getUuid())) {
                     region.addOwner(player);
                     RegionDataManager.save();
@@ -389,6 +426,9 @@ public class RegionCommands {
     }
 
     private static int removeChildren(CommandContext<ServerCommandSource> src, DimensionRegionCache dimCache, IMarkableRegion parent, IMarkableRegion child) {
+    	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+    		return 1;
+    	
         if (parent.hasChild(child)) {
             // FIXME: Removing child does not set priority correct with overlapping regions
             dimCache.getDimensionalRegion().addChild(child); // this also removes the child from the local parent
@@ -407,6 +447,9 @@ public class RegionCommands {
     }
 
     private static int addChildren(CommandContext<ServerCommandSource> src, IMarkableRegion parent, IMarkableRegion child) {
+    	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage"))
+    		return 1;
+    	
         if (!parent.hasChild(child) && child.getParent() != null && child.getParent() instanceof DimensionalRegion) {
             parent.addChild(child);
             LocalRegions.ensureHigherRegionPriorityFor((CuboidRegion) child, parent.getPriority() + 1);
@@ -424,6 +467,10 @@ public class RegionCommands {
 
     // Adds default flag for provided RegionFlag
     private static int addFlag(CommandContext<ServerCommandSource> src, IMarkableRegion region, RegionFlag flag) {
+    	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage.flags")
+    			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+    		return 1;
+    	
         if (!region.containsFlag(flag)) {
             IFlag iFlag = null;
             switch (flag.type) {
@@ -519,6 +566,10 @@ public class RegionCommands {
     }
 
     private static int removeFlag(CommandContext<ServerCommandSource> src, IMarkableRegion region, RegionFlag flag) {
+    	if (!CommandPermissionConfig.check(src.getSource(), "yawp.region.manage.flags")
+    			&& !(src.getSource().isExecutedByPlayer() && region.hasOwner(src.getSource().getPlayer().getUuid())))
+    		return 1;
+    	
         if (region.containsFlag(flag)) {
             region.removeFlag(flag.name);
             RegionDataManager.save();
@@ -767,7 +818,7 @@ public class RegionCommands {
 
     private static int teleport(ServerCommandSource src, IMarkableRegion region) {
         try {
-            ServerPlayerEntity player = src.getPlayerOrThrow();
+            PlayerEntity player = src.getPlayerOrThrow();
             src.getServer().getCommandManager().getDispatcher().execute(buildRegionTpCmd(region, player.getEntityName()), src);
             return 0;
         } catch (CommandSyntaxException e) {
