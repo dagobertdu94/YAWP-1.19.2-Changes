@@ -79,7 +79,7 @@ public class CommandInterceptor {
                 try {
                     if (src.getEntity() instanceof PlayerEntity) {
                         ServerPlayerEntity player = src.getPlayerOrThrow();
-                        boolean hasConfigPermission = hasPlayerPermission(player);
+                        boolean hasConfigPermission = check(src, "yawp.region.manage");
                         boolean isOwner = region.hasOwner(player.getUuid()) || (player.getScoreboardTeam() != null && region.hasOwner(player.getScoreboardTeam().getName()));
                         boolean isOwnerOfParent = region.getParent() != null && region.getParent().hasOwner(player.getUuid())
                                 || (player.getScoreboardTeam() != null && region.getParent().hasOwner(player.getScoreboardTeam().getName()));
@@ -108,7 +108,7 @@ public class CommandInterceptor {
                             return 1;
                         }
                     } else {
-                        if (!hasPermission(src)) {
+                        if (!check(src, "yawp.region.manage")) {
                             YetAnotherWorldProtector.LOGGER.info("' " + src.getName() + "' is not allowed to manage region: '" + region.getName() + "' in dim '" + region.getDim().getValue() + "'!");
                             sendCmdFeedback(src, Text.translatable("cli.msg.dim.info.region.modify.local.deny", buildRegionInfoLink(region, LOCAL)));
                             return 1;
@@ -140,7 +140,7 @@ public class CommandInterceptor {
                 if (src.getEntity() instanceof PlayerEntity) {
                     if (dimCache != null) {
                         ServerPlayerEntity player = src.getPlayerOrThrow();
-                        boolean hasConfigPermission = hasPlayerPermission(player);
+                        boolean hasConfigPermission = check(src, "yawp.dim.manage");
                         boolean isOwner = dimCache.hasOwner(player);
 
                         // check for info cmd permission
@@ -164,7 +164,7 @@ public class CommandInterceptor {
                     }
                 } else {
                     // server or cmd block?
-                    if (!hasPermission(src)) {
+                    if (!check(src, "yawp.dim.manage")) {
                         YetAnotherWorldProtector.LOGGER.info("' " + src.getName() + "' is not allowed to manage dim");
                         sendCmdFeedback(src, Text.translatable("cli.msg.dim.info.region.modify.dim.deny", buildRegionInfoLink(dimCache.getDimensionalRegion(), DIMENSION)));
                         return 1;
