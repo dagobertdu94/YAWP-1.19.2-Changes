@@ -496,8 +496,8 @@ public class RegionCommands {
     }
 
     public static void removeInvolvedEntities(CommandContext<ServerCommandSource> src, IProtectedRegion region, RegionFlag flag) {
-        // FIXME: Level is where the command source is, not the target level of the region
-        ServerWorld level = src.getSource().getWorld();
+        ServerWorld level = src.getSource().getServer().getWorld(region.getDim());
+    	
         Predicate<? super Entity> entityFilter = getEntityFilterForFlag(flag);
         if (region instanceof DimensionalRegion) {
             List<Entity> entities = getEntitiesToRemove(level, entityFilter, flag);
