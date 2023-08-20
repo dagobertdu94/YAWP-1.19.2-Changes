@@ -17,6 +17,8 @@ import net.minecraft.world.World;
 
 import static de.z0rdak.yawp.util.LocalRegions.getInvolvedRegionFor;
 
+import de.z0rdak.yawp.config.server.CommandPermissionConfig;
+
 public final class HandlerUtil {
 
     private HandlerUtil() {
@@ -95,6 +97,15 @@ public final class HandlerUtil {
     public static FlagCheckEvent.PlayerFlagEvent checkPlayerEvent(PlayerEntity player, BlockPos target, RegionFlag regionFlag, DimensionalRegion dimRegion) {
         IMarkableRegion involvedRegion = getInvolvedRegionFor(target, player, player.world.getRegistryKey());
         FlagCheckEvent.PlayerFlagEvent flagCheck = new FlagCheckEvent.PlayerFlagEvent(player, dimRegion, involvedRegion, regionFlag);
+        
+        if (CommandPermissionConfig.canBypassFlagCheck(player)) {
+        	flagCheck.setDenied(false);
+        	flagCheck.setDeniedInDim(false);
+        	flagCheck.setDeniedLocal(false);
+        	
+        	return flagCheck;
+        }
+        
         if (involvedRegion == null) {
             flagCheck.setDeniedLocal(false);
         } else {
