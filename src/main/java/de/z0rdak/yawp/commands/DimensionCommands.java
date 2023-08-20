@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import de.z0rdak.yawp.commands.arguments.region.RegionArgumentType;
+import de.z0rdak.yawp.config.server.CommandPermissionConfig;
 import de.z0rdak.yawp.config.server.RegionConfig;
 import de.z0rdak.yawp.core.affiliation.AffiliationType;
 import de.z0rdak.yawp.core.area.AreaType;
@@ -54,7 +55,7 @@ public class DimensionCommands {
         return literal(DIM)
                 /* /wp dimension <dim> list region */
                 .then(CommandManager.argument(DIM.toString(), DimensionArgumentType.dimension())
-                        .then(literal(CREATE)
+                        .then(literal(CREATE).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.create"))
                                 .then(literal(REGION)
                                         .then(CommandManager.argument(REGION.toString(), StringArgumentType.word())
                                                 .suggests((ctx, builder) -> CommandSource.suggestMatching(Collections.singletonList(regionNameSuggestions.get(new Random().nextInt(regionNameSuggestions.size()))), builder))
@@ -79,12 +80,12 @@ public class DimensionCommands {
                         .executes(ctx -> promptDimensionInfo(ctx.getSource(), getDimCacheArgument(ctx)))
                         .then(literal(INFO).executes(ctx -> promptDimensionInfo(ctx.getSource(), getDimCacheArgument(ctx))))
                         /* /wp dimension <dim> activate */
-                        .then(literal(ENABLE)
+                        .then(literal(ENABLE).requires((src) -> CommandPermissionConfig.check(src, "yawp.dim.toggle"))
                                 // TODO: Add toggle cmd
                                 .executes(ctx -> setActiveState(ctx, getDimCacheArgument(ctx)))
                                 .then(CommandManager.argument(ENABLE.toString(), BoolArgumentType.bool())
                                         .executes(ctx -> setActiveState(ctx, getDimCacheArgument(ctx), getEnableArgument(ctx)))))
-                        .then(literal(LIST)
+                        .then( literal(LIST)
                                 .then(literal(REGION)
                                         .executes(ctx -> promptDimensionRegionList(ctx.getSource(), getDimCacheArgument(ctx), 0))
                                         .then(CommandManager.argument(PAGE.toString(), IntegerArgumentType.integer(0))
@@ -120,13 +121,13 @@ public class DimensionCommands {
                                         .executes(ctx -> promptDimensionFlagList(ctx.getSource(), getDimCacheArgument(ctx), 0))
                                         .then(CommandManager.argument(PAGE.toString(), IntegerArgumentType.integer(0))
                                                 .executes(ctx -> promptDimensionFlagList(ctx.getSource(), getDimCacheArgument(ctx), getPageNoArgument(ctx))))))
-                        .then(literal(DELETE)
+                        .then(literal(DELETE).requires((src) -> CommandPermissionConfig.check(src, "yawp.region.delete"))
                                 .then(CommandManager.argument(REGION.toString(), StringArgumentType.word())
                                         .suggests((ctx, builder) -> RegionArgumentType.region().listSuggestions(ctx, builder))
                                         .executes(ctx -> attemptDeleteRegion(ctx.getSource(), getDimCacheArgument(ctx), getRegionArgument(ctx)))
                                         .then(CommandManager.literal("-y")
                                                 .executes(ctx -> deleteRegion(ctx.getSource(), getDimCacheArgument(ctx), getRegionArgument(ctx))))))
-                        .then(literal(REMOVE)
+                        .then(literal(REMOVE).requires((src) -> CommandPermissionConfig.check(src, "yawp.dim.manage"))
                                 .then(literal(PLAYER)
                                         .then(CommandManager.argument(AFFILIATION.toString(), StringArgumentType.string())
                                                 .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
@@ -151,7 +152,7 @@ public class DimensionCommands {
                                         .then(CommandManager.argument(FLAG.toString(), StringArgumentType.string())
                                                 .suggests((ctx, builder) -> CommandSource.suggestMatching(RegionDataManager.get().getFlagsIdsForDim(getDimCacheArgument(ctx)), builder))
                                                 .executes(ctx -> removeFlag(ctx, getDimCacheArgument(ctx), getFlagArgument(ctx))))))
-                        .then(literal(ADD)
+                        .then(literal(ADD).requires((src) -> CommandPermissionConfig.check(src, "yawp.dim.manage"))
                                 .then(literal(PLAYER)
                                         .then(CommandManager.argument(AFFILIATION.toString(), StringArgumentType.string())
                                                 .suggests((ctx, builder) -> CommandSource.suggestMatching(affiliationList, builder))
@@ -285,7 +286,7 @@ public class DimensionCommands {
             }
             dimCache.getDimensionalRegion().addFlag(iflag);
             RegionDataManager.save();
-            MutableText flagLink = MessageUtil.buildFlagCmdInfoLink(dimCache.getDimensionalRegion(), RegionType.DIMENSION, iflag);
+            MutableText flagLink = MessageUtil.buildFlagCmdInfoLink(dimCache.getDimensionalRegion(), RegionType.DIMENSION, iflag); // FIXME Not used
             sendCmdFeedback(src.getSource(), Text.translatable("cli.msg.flags.added", buildFlagQuickInfo(iflag),
                     buildRegionInfoLink(dimCache.getDimensionalRegion(), RegionType.DIMENSION)).append(" ").append(buildRegionActionUndoLink(src.getInput(), ADD, REMOVE)));
             return 0;
@@ -399,7 +400,7 @@ public class DimensionCommands {
         if (dimCache != null) {
             CommandConstants toReplace = activate ? FALSE : TRUE;
             CommandConstants replacement = activate ? TRUE : FALSE;
-            boolean oldState = dimCache.getDimensionalRegion().isActive();
+            boolean oldState = dimCache.getDimensionalRegion().isActive(); // FIXME Not used
             dimCache.getDimensionalRegion().setIsActive(activate);
             RegionDataManager.save();
             MutableText undoLink = buildRegionActionUndoLink(src.getInput(), toReplace, replacement);
