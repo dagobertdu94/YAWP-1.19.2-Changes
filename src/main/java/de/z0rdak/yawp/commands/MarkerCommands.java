@@ -46,7 +46,7 @@ public final class MarkerCommands {
     }
 
     public static LiteralArgumentBuilder<ServerCommandSource> build() {
-        return literal(MARKER)
+        return literal(MARKER).requires((src) -> CommandPermissionConfig.check(src, "yawp.marker"))
                 .then(literal(GIVE)
                         .executes(ctx -> giveMarkerStick(ctx.getSource())))
                 .then(literal(RESET)
@@ -90,7 +90,7 @@ public final class MarkerCommands {
                         }
                         AbstractMarkableRegion region = LocalRegions.regionFrom(player, marker, regionName);
                         RegionDataManager.addFlags(RegionConfig.getDefaultFlags(), region);
-                        boolean hasConfigPermission = CommandPermissionConfig.hasPlayerPermission(player);
+                        boolean hasConfigPermission = CommandPermissionConfig.check(src, "yawp.region.create");
                         if (parentRegion != null) {
                             // should only be a region which has player as owner at this point due to the OwnerRegionArgumentType suggestions
                             if (parentRegion.hasOwner(player.getUuid()) || hasConfigPermission) {
