@@ -98,7 +98,7 @@ public final class HandlerUtil {
         IMarkableRegion involvedRegion = getInvolvedRegionFor(target, player, player.world.getRegistryKey());
         FlagCheckEvent.PlayerFlagEvent flagCheck = new FlagCheckEvent.PlayerFlagEvent(player, dimRegion, involvedRegion, regionFlag);
         
-        if (CommandPermissionConfig.canBypassFlagCheck(player)) {
+        if (CommandPermissionConfig.ALLOW_BYPASS.get() == true && CommandPermissionConfig.canBypassFlagCheck(player)) {
         	flagCheck.setDenied(false);
         	flagCheck.setDeniedInDim(false);
         	flagCheck.setDeniedLocal(false);
