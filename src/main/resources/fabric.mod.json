@@ -16,7 +16,7 @@
   "icon": "logo.png",
   "environment": "*",
   "entrypoints": {
-    "server": [
+    "main": [
       "de.z0rdak.yawp.YetAnotherWorldProtector"
     ]
   },
