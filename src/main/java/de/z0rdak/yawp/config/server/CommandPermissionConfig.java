@@ -2,13 +2,19 @@ package de.z0rdak.yawp.config.server;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.z0rdak.yawp.YetAnotherWorldProtector;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.CommandBlockBlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.CommandBlockMinecartEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.OperatorEntry;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 import java.util.*;
@@ -23,6 +29,10 @@ public class CommandPermissionConfig {
     public static final ForgeConfigSpec.ConfigValue<Integer> REQUIRED_OP_LEVEL;
     public static final ForgeConfigSpec.ConfigValue<Boolean> COMMAND_BLOCK_EXECUTION;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> PLAYERS_WITH_PERMISSION;
+    
+    public static final ForgeConfigSpec.ConfigValue<Boolean> USE_LUCKPERMS;
+    public static final ForgeConfigSpec.ConfigValue<Boolean> ALLOW_BYPASS;
+    
     public static final ForgeConfigSpec.ConfigValue<Integer> WP_COMMAND_ALTERNATIVE;
     public static final String[] WP_CMDS = new String[]{"wp", "yawp"};
     public static String BASE_CMD = "wp";
@@ -32,6 +42,16 @@ public class CommandPermissionConfig {
         final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
 
         BUILDER.push("YetAnotherWorldProtector mod server configuration").build();
+        
+        USE_LUCKPERMS = BUILDER.comment("Uses LuckPerms instead of the vanilla logic.", "LuckPerms must be present otherwise this will ignored!")
+        		.define("use_luckperms", true);
+        
+        ALLOW_BYPASS = BUILDER.comment("Allows players that are operator with the required OP level or are present in the UUID list of allowed players (vanilla logic) to bypass all flag check events.",
+        		"If LuckPerms is present, bypassing is allowed if the permission yawp.admin is given to the target player.")
+        		.define("allow_bypassing_flag_events", true);
+        
+        
+        
 
         COMMAND_BLOCK_EXECUTION = BUILDER.comment("Permission for command blocks to execute mod commands")
                 .define("command_block_execution", true);
@@ -79,7 +99,7 @@ public class CommandPermissionConfig {
         return ALLOW_READ_ONLY_CMDS.get();
     }
 
-    public static Set<String> UUIDsWithPermission() {
+    public static Set<String> _UUIDsWithPermission() {
         return PLAYERS_WITH_PERMISSION.get()
                 .stream()
                 .filter(Objects::nonNull)
@@ -88,26 +108,25 @@ public class CommandPermissionConfig {
     }
 
     // FIXME: What about CommandBlockMinecarts?
-    public static boolean hasPermission(ServerCommandSource source) {
+    public static boolean check(ServerCommandSource source, String perm) {
         try {
-            return hasPlayerPermission(source.getPlayerOrThrow());
+            return checkForPermissionOrVanillaLogic(source.getPlayerOrThrow(), perm);
         } catch (CommandSyntaxException e) {
             boolean isServerConsole = source.getName().equals("Server");
             if (isServerConsole) {
                 return true;
             } else {
-                return COMMAND_BLOCK_EXECUTION.get();
+                return (isCommandBlock(source) ? COMMAND_BLOCK_EXECUTION.get() : false);
             }
         }
     }
 
-    public static boolean hasPlayerPermission(PlayerEntity player) {
-        return hasUUIDConfigEntry(player) || hasNeededOpLevel(player) ||
-                player.hasPermissionLevel(REQUIRED_OP_LEVEL.get());
+    public static boolean checkForVanillaLogic(PlayerEntity player) {
+        return hasUUIDConfigEntry(player) || hasNeededOpLevel(player) || player.hasPermissionLevel(REQUIRED_OP_LEVEL.get());
     }
 
     public static boolean hasUUIDConfigEntry(PlayerEntity player) {
-        Set<String> playersInConfig = UUIDsWithPermission();
+        Set<String> playersInConfig = _UUIDsWithPermission();
         return playersInConfig.contains(player.getUuidAsString());
     }
 
@@ -117,12 +136,48 @@ public class CommandPermissionConfig {
     }
 
     public static boolean hasNeededOpLevel(PlayerEntity player) {
-        OperatorEntry opPlayerEntry = serverInstance.getPlayerManager()
-                .getOpList()
-                .get(player.getGameProfile());
-        if (opPlayerEntry != null) {
-            return opPlayerEntry.getPermissionLevel() >= REQUIRED_OP_LEVEL.get();
-        }
-        return false;
+    	return serverInstance.getPermissionLevel(player.getGameProfile()) >= REQUIRED_OP_LEVEL.get();
     }
+    
+    public static boolean isCommandBlock(ServerCommandSource src) {
+    	final ServerWorld w = src.getWorld();
+    	
+    	if (w.getBlockState(new BlockPos(src.getPosition())).getBlock() == Blocks.COMMAND_BLOCK)
+    		return true;
+    	if (w.getNonSpectatingEntities(CommandBlockMinecartEntity.class, Box.from(src.getPosition())).size() > 0)
+    		return true;
+    	return false;
+    }
+    
+    public static boolean isUsingLuckPerms() {
+    	return LuckPermsReflector.isLuckPermsAccessible();
+    }
+    
+    private static boolean hasPermission(PlayerEntity p, String perm) {
+    	if (LuckPermsReflector.hasPermission(p, "yawp.admin"))
+    		return true;
+    	
+    	return LuckPermsReflector.hasPermission(p, perm);
+    }
+    
+    public static boolean hasAdminPermission(PlayerEntity p) {
+    	return hasPermission(p, "yawp.admin");
+    }
+    
+    public static boolean canBypassFlagCheck(PlayerEntity p) {
+    	if (isUsingLuckPerms()) {
+    		return hasAdminPermission(p);
+    	} else {
+    		return (checkForVanillaLogic(p));
+    	}
+    }
+    
+    public static boolean checkForPermissionOrVanillaLogic(PlayerEntity p, String perm) {
+    	if (isUsingLuckPerms() && perm != null) {
+    		return hasPermission(p, perm);
+    	} else {
+    		return (checkForVanillaLogic(p));
+    	}
+    }
+    
 }
